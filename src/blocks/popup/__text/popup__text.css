@@ -1,0 +1,22 @@
+.popup__text {
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, .2);
+  width: 358px;
+  height: 27px;
+  padding: 0 0 3px 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 17px;
+  margin-bottom: 5px;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+.popup__text::placeholder {
+  color: #000;
+}
+
+@media screen and (max-width: 568px) {
+  .popup__text {
+    width: 238px;
+  }
+}

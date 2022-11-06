@@ -1,0 +1,21 @@
+.popup__image {
+  object-fit: cover;
+  object-position: center;
+  max-width: 75vh;
+  max-height: 70vh;
+  color: #fff;
+}
+
+@media screen and (max-width: 730px) {
+  .popup__image {
+    width: 55vh;
+    max-height: 70vh;
+  }
+}
+
+@media screen and (max-width: 568px) {
+  .popup__image {
+    width: 240px;
+    height: 300px;
+  }
+}

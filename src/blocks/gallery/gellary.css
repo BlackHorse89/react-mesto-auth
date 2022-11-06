@@ -1,0 +1,12 @@
+.gallery {
+  width: 100%;
+  margin: 51px 0 67px;
+}
+
+@media screen and (max-width: 568px) {
+  .gallery {
+    padding: 0 19px;
+    margin: 36px 0 48px;
+    box-sizing: border-box;
+  }
+}

@@ -1,0 +1,56 @@
+.profile__image {
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  display: block;
+  position: relative;
+  background: none;
+  object-fit: cover;
+  object-position: center;
+}
+
+.profile__image:hover {
+  cursor: pointer;
+}
+
+.profile__image::before {
+  background-color: rgba(0, 0, 0, 0.8);
+  content: "";
+  position: absolute;
+  background-position: center;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  z-index: 1;
+  transition: 0.3s;
+}
+
+.profile__image::after {
+  position: absolute;
+  content: '';
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0;
+  margin: auto;
+  background-image: url(../../../images/pen.svg);
+  height: 26px;
+  width: 26px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  transition: .4s;
+}
+
+.profile__image:hover::before {
+  opacity: .8;
+}
+
+.profile__image:hover::after {
+  opacity: 1;
+  z-index: 1;
+}
