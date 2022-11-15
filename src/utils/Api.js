@@ -78,28 +78,6 @@ export class Api {
     .then(this._checkServer)
   }
 
-  putLike(data) {
-    return fetch(`${this._baseUrl}/cards/${data._id}/likes`, {
-      method: 'PUT',
-      headers: {
-        authorization: this._token,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(this._checkServer)
-  }
-
-  deleteLike(data) {
-    return fetch(`${this._baseUrl}/cards/${data._id}/likes`, {
-      method: 'DELETE',
-      headers: {
-        authorization: this._token,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(this._checkServer)
-  }
-
   changeLikeCardStatus(cardId, isLiked) {
     return fetch(`${this._baseUrl}/cards/${cardId}/likes`, {
       method: isLiked ? 'PUT' : 'DELETE',
@@ -126,6 +104,47 @@ export class Api {
   }
 }
  
- const api = new Api ({baseUrl: 'https://mesto.nomoreparties.co/v1/cohort-50',
-                         token: '319bda5b-484e-4cb7-80d7-e3857f99b673'});
- export default api;
+const api = new Api ({baseUrl: 'https://mesto.nomoreparties.co/v1/cohort-50',
+                        token: '319bda5b-484e-4cb7-80d7-e3857f99b673'});
+export default api;
+
+/** еще один сервер */
+export const newBase = 'https://auth.nomoreparties.co';
+
+const checkServer = res => res.ok ? res.json() : Promise.reject(`Что-то пошло не так:: ${res.status}`);
+
+export const registration = ({email, password}) => {
+  return fetch(`${newBase}/signup`, {
+    method: "POST",
+    headers: {
+      'Accept': 'application/json',
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({email, password})
+  })
+  .then(checkServer)
+}
+
+export const authorize = ({email, password}) => {
+  return fetch(`${newBase}/signin`, {
+    method: "POST",
+    headers: {
+      'Accept': 'application/json',
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({email, password})
+  })
+  .then(checkServer)
+}
+
+export const getContent = (token) => {
+  return fetch(`${newBase}/users/me`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      "Content-Type": "application/json",
+      "Authorization" : `Bearer ${token}`
+    }
+  })
+  .then(checkServer)
+};
