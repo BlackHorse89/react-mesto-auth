@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import { Redirect } from "react-router-dom";
 
-function Login ({onLogin, }) {
+function Login ({onLogin, loggedIn}) {
   const [userData, setUserData] = useState({email: '', password: ''});
 
   // Супер handleChange.
@@ -10,11 +11,13 @@ function Login ({onLogin, }) {
   }
 
   function handleSubmit(e) {
-    let {email, password} = userData;
     e.preventDefault();
-    onLogin({email, password})
+    onLogin(userData.email, userData.password)
   }
 
+  if (loggedIn) {
+    return <Redirect to="/" />;
+  }
   return(
     <section className="login">
       <form className="login__form" onSubmit={handleSubmit}>

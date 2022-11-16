@@ -13,7 +13,7 @@ import ProtectedRoute from './ProtectedRoute.js';
 import Login from './Login.js';
 import Register from './Register.js';
 import InfoTooltip from './InfoTooltip.js';
-import {registration, authorize, getContent} from '../utils/Api.js';
+import * as Auth from '../utils/Auth.js';
 
 function App() {
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
@@ -26,7 +26,7 @@ function App() {
   const [currentCardDelete, setCurrentCardDelete] = useState({});
   const [loggedIn, setLoggedIn] = useState(false);
   const [isInfoTooltiopen, setIsInfoTooltiOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState({email: ''});
+  const [userEmail, setUserEmail] = useState({});
   const [registed, setRegisted] = useState(false);
 
   function handleEditAvatarClick() {
@@ -59,7 +59,7 @@ function App() {
     api.changeLikeCardStatus(card._id, !isLiked).then((newCard) => {
       setCards((state) => state.map((c) => c._id === card._id ? newCard : c));
     })
-    .catch(err => console.log(`Изменения лайка не произошло! ${err}`))
+      .catch(err => console.log(`Изменения лайка не произошло! ${err}`))
   }
 
   function handleCardDelete(card) {
@@ -67,7 +67,7 @@ function App() {
       setCards(cards.filter((prevCard) => prevCard._id !== card._id));
       setCurrentCardDelete(card);
     })
-    .catch(err => console.log(`Не получилось удалить карточку. ${err}`))
+      .catch(err => console.log(`Не получилось удалить карточку. ${err}`))
   }
 
   function handleSubmit(data) {
@@ -98,134 +98,144 @@ function App() {
   }
 
   useEffect(() => {
-    api.getInfo()
-      .then(res => {
-        setCurrentUser(res)
-      })
-      .catch(err => console.log(`Возникла ошибка ${err}`))
-  }, [])
+    if (loggedIn) {
+      api.getInfo()
+        .then(res => {
+          setCurrentUser(res)
+        })
+        .catch(err => console.log(`Возникла ошибка ${err}`))
 
-  useEffect(() => {
-    api.getInitialCards()
-      .then(response => {
-        setCards(response)
-      })
-      .catch(err => console.log(`Возникла ошибка ${err}`))
-  }, [])
+      api.getInitialCards()
+        .then(response => {
+          setCards(response)
+        })
+        .catch(err => console.log(`Возникла ошибка ${err}`))
+    }
+  }, [loggedIn])
 
   // авторизация  
-  const handleAuthorize = useCallback((data) => {
-    localStorage.setItem('jwt', data.jwt)
-    setLoggedIn(true)
-    setUserEmail(data.user);
+  const getToken = useCallback(async () => {
+    try {
+      const jwt = localStorage.getItem("jwt");
+      if (!jwt) {
+        console.log("Ошибка с токеном");
+      }
+      const user = await Auth.getContent(jwt);
+      if (!user) {
+        throw new Error("Беда с юзером");
+      }
+      setLoggedIn(true);
+      setUserEmail(user.data);//устанавливаем email
+    } catch {
+      console.log("400 — Токен не передан или передан не в том формате или 401 — Переданный токен некорректен");
+    }
   }, []);
 
-  const handleRegister = useCallback(async ({email, password}) => {
+  useEffect(() => {
+    getToken()
+  }, [getToken]);
+
+  const handleRegister = useCallback(async ({ email, password }) => {
     try {
-      const res = await registration({email, password})
-      if(res) {
+      const res = await Auth.registration({ email, password })
+      if (res) {
         setIsInfoTooltiOpen(true);
         setRegisted(true);
         return res;
       }
-    } catch(error) {
-        console.log(error);
-        setIsInfoTooltiOpen(true);
+    } catch (error) {
+      console.log(`400 - некорректно заполнено одно из полей ${error}`);
+      setIsInfoTooltiOpen(true);
     }
   }, []);
 
-  const handleLogin = useCallback(async ({email, password}) => {
+  const handleLogin = useCallback(async (email, password) => {
     try {
-      const data = await authorize(email, password);
-      if (!data) throw new Error('400 - не передано одно из полей или 401 - пользователь с email не найден')
-      if (data.jwt) {
-        handleAuthorize(data);
+      const data = await Auth.authorize(email, password);
+      // в ответе находиться только токен
+      if (data.token) {
+        localStorage.setItem("jwt", data.token);
+        getToken();// получаем email пользователя
+        setLoggedIn(true);
       }
-    } finally{}
-  }, [handleAuthorize]);
+    } catch (err) {
+      switch (err) {
+        case 400:
+          console.log("Ошибка 400. Не передано одно из полей.");
+          break;
+        case 401:
+          console.log(`Ошибка 401. Пользователь ${email} не найден.`);
+          break;
+        default:
+          console.log(`Аутентификация не пройдена. Ошибка ${err}`);
+      }
+    }
+  }, []);
 
   const logout = useCallback(() => {
     setLoggedIn(false);
     localStorage.removeItem('jwt');
-    setUserEmail('');
+    setUserEmail({});
   }, [])
-
-  const checkToken = useCallback(async () => {
-    try {
-      let jwt = localStorage.getItem('jwt');
-      if (!jwt) {
-        throw new Error('400 — Токен не передан или передан не в том формате или 401 — Переданный токен некорректен');
-      }
-      const user =await getContent(jwt)
-      if (user) {
-        setLoggedIn(true)
-        setUserEmail(user.data);
-      }
-    } finally{}
-  }, []);
-
-  useEffect(() => {
-    checkToken()
-  }, [checkToken]);
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="App">
+        <Header logout={logout} email={userEmail.email} />
         <Switch>
-          <ProtectedRoute path="/main"
+          <ProtectedRoute path="/" exact
             component={Main}
-            onEditAvatar = {handleEditAvatarClick} title="Выход" 
-            onEditProfile = {handleEditProfileClick} userEmail={userEmail}
-            onAddPlace = {handleAddPlaceClick} logout={logout}
-            currentUser = {currentUser} route="/sign-in"
-            cards = {cards}
-            onClickCard = {handleCardClick}
-            onCardLike = {handleCardLike}
+            onEditAvatar={handleEditAvatarClick}
+            onEditProfile={handleEditProfileClick}
+            onAddPlace={handleAddPlaceClick}
+            cards={cards}
+            onClickCard={handleCardClick}
+            onCardLike={handleCardLike}
             onCardDelete={handleCardDelete}
             loggedIn={loggedIn} />
 
           <Route path="/sign-up">
-            <Header title="Вход" route="/sign-in"/>
-            <Register onRegister={handleRegister}/>
+            <Register onRegister={handleRegister} />
           </Route>
-          <Route  path="/sign-in">
-            <Header title="Регистрация" route="/sign-up"/>
-            <Login onLogin={handleLogin}/>
+          <Route path="/sign-in">
+            <Login onLogin={handleLogin}
+            loggedIn={loggedIn}
+            />
           </Route>
-          <Route exact path="/">
-            {loggedIn ? <Redirect to="/main"/> : <Redirect to="/sign-up"/>}
+          <Route path="/">
+            {loggedIn ? <Redirect to="/" /> : <Redirect to="/sign-in" />}
           </Route>
         </Switch>
 
-        <EditProfilePopup 
-          isOpen={isEditProfilePopupOpen} 
-          onClose={closeAllPopups} 
+        <EditProfilePopup
+          isOpen={isEditProfilePopupOpen}
+          onClose={closeAllPopups}
           onUpdateUser={handleSubmit} />
 
-        <AddPlacePopup 
-          isOpen={isAddPlacePopupOpen} 
-          onClose={closeAllPopups} 
+        <AddPlacePopup
+          isOpen={isAddPlacePopupOpen}
+          onClose={closeAllPopups}
           onAddPlace={handleAddPlaceSubmit} />
-            
-        <EditAvatarPopup 
-          isOpen={isEditAvatarPopupOpen} 
-          onClose={closeAllPopups} 
+
+        <EditAvatarPopup
+          isOpen={isEditAvatarPopupOpen}
+          onClose={closeAllPopups}
           onUpdateAvatar={handleUpdateAvatar} />
 
         <InfoTooltip
           isOpen={isInfoTooltiopen}
           onClose={closeAllPopups}
-          registed={registed}/>
-          
-        <ImagePopup 
-          card={selectedCard} 
-          isOpen={isImagePopupOpen} 
+          registed={registed} />
+
+        <ImagePopup
+          card={selectedCard}
+          isOpen={isImagePopupOpen}
           onClose={closeAllPopups} />
 
         <Footer />
 
       </div>
     </CurrentUserContext.Provider>
-    );
+  );
 }
 export default App;
