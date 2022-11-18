@@ -26,7 +26,7 @@ function App() {
   const [currentCardDelete, setCurrentCardDelete] = useState({});
   const [loggedIn, setLoggedIn] = useState(false);
   const [isInfoTooltiopen, setIsInfoTooltiOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState({});
+  const [userEmail, setUserEmail] = useState('');
   const [registed, setRegisted] = useState(false);
 
   function handleEditAvatarClick() {
@@ -125,7 +125,7 @@ function App() {
         throw new Error("Беда с юзером");
       }
       setLoggedIn(true);
-      setUserEmail(user.data);//устанавливаем email
+      setUserEmail(user.data.email);
     } catch {
       console.log("400 — Токен не передан или передан не в том формате или 401 — Переданный токен некорректен");
     }
@@ -133,7 +133,7 @@ function App() {
 
   useEffect(() => {
     getToken()
-  }, [getToken]);
+  }, []);
 
   const handleRegister = useCallback(async ({ email, password }) => {
     try {
@@ -152,11 +152,10 @@ function App() {
   const handleLogin = useCallback(async (email, password) => {
     try {
       const data = await Auth.authorize(email, password);
-      // в ответе находиться только токен
       if (data.token) {
         localStorage.setItem("jwt", data.token);
-        getToken();// получаем email пользователя
         setLoggedIn(true);
+        setUserEmail(email)
       }
     } catch (err) {
       switch (err) {
@@ -175,13 +174,13 @@ function App() {
   const logout = useCallback(() => {
     setLoggedIn(false);
     localStorage.removeItem('jwt');
-    setUserEmail({});
+    setUserEmail('');
   }, [])
 
   return (
     <CurrentUserContext.Provider value={currentUser}>
       <div className="App">
-        <Header logout={logout} email={userEmail.email} />
+        <Header logout={logout} email={userEmail} />
         <Switch>
           <ProtectedRoute path="/" exact
             component={Main}
